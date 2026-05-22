@@ -51,7 +51,7 @@ def _sanitize_terminal_output(text: str) -> str:
 # MAIN FUNCTION
 # =========================
 
-def send_to_open_interpreter(prompt: str) -> str:
+def send_to_llm(prompt: str) -> str:
     """
     Send prompt to Open Interpreter using Groq backend.
     """

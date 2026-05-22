@@ -2,46 +2,50 @@ import os
 import re
 
 from dotenv import load_dotenv
-from interpreter import interpreter
+from openai import OpenAI
 
 from utils.helpers import print_error, print_info
 
 
 # =========================
-# LOAD ENV VARIABLES
+# LOAD ENV
 # =========================
 
 load_dotenv()
 
 
 # =========================
-# CONFIGURATION
+# CONFIG
 # =========================
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+MODEL_NAME = "llama-3.3-70b-versatile"
 
 API_BASE = "https://api.groq.com/openai/v1"
-MODEL_NAME = "llama-3.3-70b-versatile"
-GROQ_KEY_ENV = "GROQ_API_KEY"
 
 
 # =========================
-# GLOBAL INTERPRETER CONFIG
+# CLIENT
 # =========================
 
-interpreter.auto_run = True
-interpreter.offline = False
+client = OpenAI(
+    api_key=GROQ_API_KEY,
+    base_url=API_BASE
+)
 
 
 # =========================
 # HELPERS
 # =========================
 
-def _sanitize_terminal_output(text: str) -> str:
-    """Remove ANSI escape sequences and normalize whitespace."""
+def _sanitize_terminal_output(text: str):
 
     if not isinstance(text, str):
         text = str(text)
 
     ansi_re = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
+
     cleaned = ansi_re.sub("", text)
 
     return cleaned.replace("\r\n", "\n").strip()
@@ -52,75 +56,43 @@ def _sanitize_terminal_output(text: str) -> str:
 # =========================
 
 def send_to_llm(prompt: str) -> str:
-    """
-    Send prompt to Open Interpreter using Groq backend.
-    """
 
     if not prompt or not prompt.strip():
         return "No text was provided."
 
-    print_info("Sending transcription to Open Interpreter (Groq)...")
+    if not GROQ_API_KEY:
+        return "GROQ_API_KEY not found in .env file."
 
-    groq_api_key = os.getenv(GROQ_KEY_ENV)
-
-    if not groq_api_key:
-        error_message = (
-            f"{GROQ_KEY_ENV} environment variable is not set."
-        )
-
-        print_error(error_message)
-
-        return error_message
+    print_info("Sending transcription to Groq LLM...")
 
     try:
 
-        # =========================
-        # REQUIRED ENV VARIABLES
-        # =========================
+        completion = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a terminal coding assistant. "
+                        "Provide concise coding-focused responses."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.3
+        )
 
-        os.environ["OPENAI_API_KEY"] = groq_api_key
-        os.environ["OPENAI_API_BASE"] = API_BASE
+        response = completion.choices[0].message.content
 
-        # =========================
-        # INTERPRETER CONFIG
-        # =========================
+        cleaned_response = _sanitize_terminal_output(response)
 
-        interpreter.llm.api_key = groq_api_key
-        interpreter.llm.api_base = API_BASE
-        interpreter.llm.model = MODEL_NAME
-
-        # =========================
-        # SEND PROMPT
-        # =========================
-
-        response = interpreter.chat(prompt)
-
-        # =========================
-        # HANDLE RESPONSE
-        # =========================
-
-        if isinstance(response, str):
-            result = response
-
-        elif isinstance(response, list):
-
-            result = "\n".join(
-                [
-                    str(item.get("content", ""))
-                    for item in response
-                    if isinstance(item, dict)
-                ]
-            )
-
-        else:
-            result = str(response)
-
-        cleaned_response = _sanitize_terminal_output(result)
-
-        return cleaned_response or "Open Interpreter returned an empty response."
+        return cleaned_response
 
     except Exception as exc:
 
-        print_error(f"Open Interpreter failed: {exc}")
+        print_error(f"Groq API failed: {exc}")
 
-        return f"Unable to contact Open Interpreter: {exc}"
+        return f"Unable to contact Groq API: {exc}"
