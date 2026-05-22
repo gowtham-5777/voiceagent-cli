@@ -1,60 +1,126 @@
-from agent.interpreter_wrapper import send_to_open_interpreter
-from commands.parser import parse_command
-from speech.recorder import record_audio
-from speech.transcriber import transcribe_audio
-from utils.helpers import clear_screen, print_error, print_header, print_info
+import os
+import re
+
+from dotenv import load_dotenv
+from interpreter import interpreter
+from agent.interpreter_wrapper import send_to_llm
+from utils.helpers import print_error, print_info
 
 
-def main():
-    print_header()
-    print_info("Welcome! Press ENTER to begin a voice interaction.")
+# =========================
+# LOAD ENV VARIABLES
+# =========================
 
-    while True:
-        try:
-            audio, samplerate = record_audio()
-        except KeyboardInterrupt:
-            print_info("Keyboard interrupt received. Exiting assistant.")
-            break
-        except Exception as exc:
-            print_error(f"Recording error: {exc}")
-            try:
-                fallback_text = input("Type a message instead (or press ENTER to retry): ").strip()
-            except EOFError:
-                print_error("No fallback input available. Exiting assistant.")
-                break
-            if not fallback_text:
-                continue
-            transcription = fallback_text
+load_dotenv()
+
+
+# =========================
+# CONFIGURATION
+# =========================
+
+API_BASE = "https://api.groq.com/openai/v1"
+MODEL_NAME = "groq/llama-3.3-70b-versatile"
+GROQ_KEY_ENV = "GROQ_API_KEY"
+
+
+# =========================
+# GLOBAL INTERPRETER CONFIG
+# =========================
+
+interpreter.auto_run = True
+interpreter.offline = False
+
+
+# =========================
+# HELPERS
+# =========================
+
+def _sanitize_terminal_output(text: str) -> str:
+    """Remove ANSI escape sequences and normalize whitespace."""
+
+    if not isinstance(text, str):
+        text = str(text)
+
+    ansi_re = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
+    cleaned = ansi_re.sub("", text)
+
+    return cleaned.replace("\r\n", "\n").strip()
+
+
+# =========================
+# MAIN FUNCTION
+# =========================
+
+def send_to_open_interpreter(prompt: str) -> str:
+    """
+    Send prompt to Open Interpreter using Groq backend.
+    """
+
+    if not prompt or not prompt.strip():
+        return "No text was provided."
+
+    print_info("Sending transcription to Open Interpreter (Groq)...")
+
+    groq_api_key = os.getenv(GROQ_KEY_ENV)
+
+    if not groq_api_key:
+        error_message = (
+            f"{GROQ_KEY_ENV} environment variable is not set."
+        )
+
+        print_error(error_message)
+
+        return error_message
+
+    try:
+
+        # =========================
+        # REQUIRED ENV VARIABLES
+        # =========================
+
+        os.environ["OPENAI_API_KEY"] = groq_api_key
+        os.environ["OPENAI_API_BASE"] = API_BASE
+
+        # =========================
+        # INTERPRETER CONFIG
+        # =========================
+
+        interpreter.llm.api_key = groq_api_key
+        interpreter.llm.api_base = API_BASE
+        interpreter.llm.model = MODEL_NAME
+
+        # =========================
+        # SEND PROMPT
+        # =========================
+        interpreter.model = MODEL_NAME
+        response = interpreter.chat(prompt)
+
+        # =========================
+        # HANDLE RESPONSE
+        # =========================
+
+        if isinstance(response, str):
+            result = response
+
+        elif isinstance(response, list):
+
+            result = "\n".join(
+                [
+                    str(item.get("content", ""))
+                    for item in response
+                    if isinstance(item, dict)
+                ]
+            )
+
         else:
-            transcription = transcribe_audio(audio, samplerate)
+            result = str(response)
 
-        if not transcription:
-            print_error("No transcription was detected. Try again.")
-            continue
+        cleaned_response = _sanitize_terminal_output(result)
 
-        print_info(f"You said: {transcription}")
-        command = parse_command(transcription)
+        return cleaned_response or "Open Interpreter returned an empty response."
 
-        if command == "clear":
-            clear_screen()
-            print_header()
-            continue
+    except Exception as exc:
 
-        if command == "run":
-            print_info("Run command received. This is a placeholder for code execution logic.")
-            continue
+        print_error(f"Open Interpreter failed: {exc}")
 
-        if command == "exit":
-            print_info("Exit command received. Goodbye.")
-            break
-
-        response = send_to_open_interpreter(transcription)
-        print_info("AI Response:")
-        print(response)
-        print_info("\nReady for the next command. Press ENTER to start recording again.")
-
-        input()
-
-
-if __name__ == "__main__":
-    main()
+        return f"Unable to contact Open Interpreter: {exc}"
