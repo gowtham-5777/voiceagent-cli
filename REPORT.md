@@ -45,6 +45,26 @@ Groq offers a modern LLM backend with a clean, OpenAI-compatible API surface. Th
 
 Open Interpreter was removed to avoid an extra wrapper layer and unnecessary dependency complexity. A direct Groq client integration simplifies the code path, reduces potential points of failure, and improves maintainability.
 
+## Agent Architecture Decision
+
+Initially, the system was designed as a wrapper around Open Interpreter to directly integrate with an existing terminal-based coding agent. During implementation, dependency instability and compatibility issues introduced reliability concerns that negatively impacted live demo stability.
+
+To prioritize maintainability, modularity, and consistent terminal interaction behavior, the architecture was refactored into a self-contained terminal voice coding assistant powered directly by the Groq LLM API.
+
+This approach preserved the core objective of the assignment:
+- voice-driven terminal interaction
+- reduced keyboard usage
+- coding-oriented assistance
+- terminal-first workflow
+
+while significantly improving:
+- reliability
+- response consistency
+- demo readiness
+- modular architecture
+
+The final system behaves as a lightweight terminal coding assistant optimized for voice-first interaction rather than as a thin wrapper around a third-party terminal agent.
+
 ## Tradeoffs
 
 - The assistant is intentionally not a full IDE or sandboxed execution environment.
