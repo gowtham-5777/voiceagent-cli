@@ -13,6 +13,11 @@ load_dotenv()
 GROQ_API_KEY_ENV = os.getenv("GROQ_API_KEY")
 API_BASE = os.getenv("OPENAI_API_BASE", "https://api.groq.com/openai/v1")
 MODEL_NAME = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+SYSTEM_PROMPT = (
+    "You are a terminal-first coding assistant. Respond concisely, favor clean code snippets, shell commands, and terminal workflows. "
+    "Keep explanations brief unless the user explicitly asks for more detail. "
+    "Use markdown code blocks only when they improve readability."
+)
 
 
 def _sanitize_terminal_output(text: str) -> str:
@@ -52,7 +57,7 @@ def send_to_llm(prompt: str) -> str:
         completion = client.chat.completions.create(
             model=MODEL_NAME,
             messages=[
-                {"role": "system", "content": "You are a terminal coding assistant. Provide concise, code-focused responses."},
+                {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": prompt},
             ],
             temperature=0.2,

@@ -25,7 +25,8 @@ def print_header():
     clear_screen()
     console.rule("[bold cyan]VOICE TERMINAL AGENT[/]", style="cyan")
     console.print(Text("Terminal-first voice coding assistant", style="bold green"))
-    console.print(Text("Speak commands or use text fallback for reliable demo interactions.\n", style="dim"))
+    console.print(Text("Speak coding requests, use terminal commands, and keep demos reliable.", style="dim"))
+    console.print()
     console.rule(style="cyan")
 
 
@@ -72,17 +73,17 @@ def print_section(title: str, subtitle: str = ""):
 
 
 def print_response(response: str, title: str = "AI RESPONSE"):
-    if not response:
-        response = "(no response received)"
+    response = (response or "").strip() or "(no response received)"
 
-    if "```" in response or response.strip().startswith("def "):
+    if "```" in response:
+        panel = Panel(Markdown(response), title=title, expand=True, style="white on #0b1220")
+    elif response.startswith(("def ", "class ", "import ", "from ")) or "\n    " in response:
         syntax = Syntax(response, "python", theme="monokai", line_numbers=False)
         panel = Panel(syntax, title=title, expand=True, style="white on #0b1220")
-    elif "# " in response or "- " in response:
-        markdown = Markdown(response)
-        panel = Panel(markdown, title=title, expand=True, style="white on #0b1220")
+    elif response.count("\n") >= 2 or response.startswith(('-', '*')):
+        panel = Panel(Markdown(response), title=title, expand=True, style="white on #0b1220")
     else:
-        panel = Panel(Text(response), title=title, expand=True, style="white on #0b1220")
+        panel = Panel(Text(response, overflow="fold"), title=title, expand=True, style="white on #0b1220")
 
     console.print(panel)
 
@@ -90,7 +91,10 @@ def print_response(response: str, title: str = "AI RESPONSE"):
 def print_status_list(items: dict):
     lines = []
     for label, status in items.items():
-        lines.append(f"[bold]{label}[/]: {status}")
+        if any(keyword in status.lower() for keyword in ("found", "loaded", "detected", "ready")):
+            lines.append(f"[bold]{label}[/]: [green]✅ {status}[/]")
+        else:
+            lines.append(f"[bold]{label}[/]: [yellow]⚠️ {status}[/]")
     console.print(Panel(Text("\n".join(lines)), title="Startup Status", expand=True, style="cyan"))
 
 

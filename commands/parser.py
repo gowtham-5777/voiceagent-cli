@@ -23,9 +23,11 @@ def parse_command(text: str) -> Optional[Tuple[str, Optional[str]]]:
         return "repeat", None
     if normalized in ("stop listening", "stop"):
         return "stop_listening", None
+    if normalized in ("resume listening", "start listening", "resume"):
+        return "resume_listening", None
     if normalized in ("list files", "ls"):
         return "list_files", None
-    if normalized in ("show current directory", "pwd", "current directory"):
+    if normalized in ("show current directory", "pwd", "current directory", "show directory"):
         return "pwd", None
 
     # create file <name>

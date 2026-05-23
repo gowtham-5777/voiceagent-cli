@@ -16,6 +16,7 @@ from utils import helpers, session
 # Suppress noisy third-party warnings for clean demo output.
 os.environ.setdefault("TRANSFORMERS_VERBOSITY", "error")
 os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
+os.environ.setdefault("CTRANSLATE2_LOG_LEVEL", "ERROR")
 logging.getLogger("transformers").setLevel(logging.ERROR)
 logging.getLogger("ctranslate2").setLevel(logging.ERROR)
 logging.getLogger("faster_whisper").setLevel(logging.ERROR)
@@ -155,6 +156,8 @@ def run_assistant(text_mode: bool = False, demo_mode: bool = False):
                         "- clear screen\n"
                         "- help\n"
                         "- repeat response\n"
+                        "- stop listening\n"
+                        "- resume listening\n"
                         "- list files\n"
                         "- show current directory\n"
                         "- create file <filename>\n"
@@ -169,8 +172,27 @@ def run_assistant(text_mode: bool = False, demo_mode: bool = False):
                     else:
                         helpers.print_info("No previous AI response available.")
                     continue
+                if action == "stop_listening":
+                    if text_mode:
+                        helpers.print_info("Already in text mode. Type a command or use help.")
+                    else:
+                        text_mode = True
+                        helpers.print_info("Listening paused. Type your command or say 'resume listening' to return to voice mode.")
+                    continue
+                if action == "resume_listening":
+                    if not text_mode:
+                        helpers.print_info("Already in voice mode.")
+                        continue
+                    try:
+                        recorder.is_microphone_available()
+                        transcriber.load_model()
+                        text_mode = False
+                        helpers.print_info("Voice mode restored. Press ENTER and speak...")
+                    except Exception as exc:
+                        helpers.print_warning(f"Cannot resume voice mode: {exc}")
+                    continue
                 if action == "list_files":
-                    files = os.listdir(base_dir)
+                    files = sorted(os.listdir(base_dir))
                     helpers.print_file_result("FILES", "\n".join(files))
                     continue
                 if action == "pwd":
@@ -201,7 +223,12 @@ def main():
     parser.add_argument("--demo", action="store_true", help="Enable demo mode with cleaner terminal output")
     args = parser.parse_args()
 
-    run_assistant(text_mode=args.text_mode, demo_mode=args.demo)
+    try:
+        run_assistant(text_mode=args.text_mode, demo_mode=args.demo)
+    except KeyboardInterrupt:
+        helpers.print_info("👋 Exiting Voice Terminal Agent...")
+    except Exception as exc:
+        helpers.print_error(f"Unexpected error: {exc}")
 
 
 if __name__ == "__main__":

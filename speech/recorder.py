@@ -83,9 +83,8 @@ def record_audio(samplerate: int = 16000, channels: int = 1):
 
     device_index = _find_input_device(samplerate=samplerate, channels=channels)
 
-    print_info("Press ENTER to begin speaking. Press ENTER again when finished.")
     input()
-    print_info("Recording... speak now.")
+    print_info("Recording... press ENTER again to stop.")
 
     listener = threading.Thread(target=stop_listener, daemon=True)
     listener.start()

@@ -2,73 +2,76 @@
 
 ## Motivation
 
-This project was developed as a terminal-first voice coding assistant for internship evaluation. The goal was to keep the experience professional and reliable while minimizing keyboard interaction and avoiding frontend complexity.
+This terminal-first assistant was built to demonstrate a polished voice-driven workflow without adding GUI complexity. The goal was a reliable demo-ready tool that helps developers speak coding requests, execute safe terminal commands, and receive structured output in the same environment they already use.
+
+## Problem statement
+
+Traditional voice assistants are often tied to browsers or mobile apps, which introduces UI overhead and reduces reliability. For a developer-focused demo, the challenge was to deliver a voice interaction loop that stays entirely within the terminal and fails gracefully when audio or LLM connectivity is not available.
 
 ## Why terminal-first?
 
-A terminal-based design is ideal for coding workflows because it matches a developer's natural environment, reduces UI surface area, and improves demo reliability. It avoids browser or GUI dependencies and keeps the assistant lightweight and focused.
+A terminal-first design matters because it keeps the experience lightweight, reduces dependencies, and matches developer workflows. It also avoids brittle GUI layers, lowers the surface area for runtime issues, and makes the assistant easier to demo in live coding sessions.
 
 ## Architecture
 
-The assistant is modular and cleanly separated:
+The solution is intentionally modular:
 
-- `main.py` contains the controller, startup validation, CLI flags, command handling, and session state.
-- `speech/recorder.py` manages microphone capture with push-to-talk reliability.
-- `speech/transcriber.py` manages `faster-whisper` transcription with singleton model reuse.
-- `agent/llm_client.py` sends prompts to a Groq-hosted LLM via an OpenAI-compatible client.
-- `commands/parser.py` identifies voice and typed commands.
-- `utils/helpers.py` renders rich terminal states and formatted responses.
-- `utils/session.py` stores the last AI response and last user command in memory.
+- `main.py` orchestrates startup checks, command handling, the interaction loop, and fallback behavior.
+- `speech/recorder.py` handles push-to-talk audio capture and microphone availability checks.
+- `speech/transcriber.py` loads `faster-whisper` once and performs transcription.
+- `agent/llm_client.py` sends user requests to Groq via an OpenAI-compatible client.
+- `commands/parser.py` maps spoken or typed text to safe assistant commands.
+- `utils/helpers.py` renders a clean terminal UI with panels, status feedback, and formatted responses.
+- `utils/session.py` stores the last user command and last AI response for repeatability.
 
-## Technology choices
+## Technology decisions
 
-- **Python**: chosen for simplicity, portability, and familiarity.
-- **sounddevice**: provides direct microphone capture in the terminal.
-- **faster-whisper**: offers efficient speech-to-text transcription with local model reuse.
-- **Groq API**: used for LLM responses via OpenAI-compatible calls.
-- **rich**: delivers polished terminal formatting without GUI dependencies.
-- **python-dotenv**: manages environment configuration cleanly.
+- **Python**: simple, portable, and easy to reason about.
+- **sounddevice**: reliable terminal microphone capture without a GUI.
+- **faster-whisper**: efficient local transcription with reusable model state.
+- **Groq API**: provides a performant LLM backend compatible with existing OpenAI-style clients.
+- **rich**: creates polished terminal rendering without browser dependencies.
+- **python-dotenv**: keeps API configuration secure and easy to manage.
 
 ## Why faster-whisper?
 
-`faster-whisper` provides a good balance between offline transcription quality and performance. Its ability to load a model once and reuse it lowers latency for repeated voice requests.
+`faster-whisper` was selected for its balance of performance and transcription quality. Its single-model reuse pattern keeps repeated voice requests responsive and avoids reloading overhead on each interaction.
 
 ## Why Groq API?
 
-Groq provides a modern LLM backend with an OpenAI-compatible interface. This project uses the existing Python-compatible client pattern for direct API calls and clean integration.
+Groq offers a modern LLM backend with a clean, OpenAI-compatible API surface. This made it straightforward to keep the assistant architecture simple and terminal-focused while still using a powerful model.
 
-## Why remove Open Interpreter?
+## Why replace Open Interpreter?
 
-The architecture was simplified to avoid stale dependencies and wrapper layers. The assistant now communicates directly with the Groq API client, which reduces indirection and improves maintainability.
+Open Interpreter was removed to avoid an extra wrapper layer and unnecessary dependency complexity. A direct Groq client integration simplifies the code path, reduces potential points of failure, and improves maintainability.
 
-## Engineering decisions
+## Tradeoffs
 
-- **Reliability over novelty**: push-to-talk is kept for stability instead of experimental always-listening behavior.
-- **Demo mode**: added a lightweight presentation mode to reduce noise and highlight essential status output.
-- **Startup validation**: added runtime checks for the microphone, `.env`, API key, and whisper model.
-- **Session memory**: retained the last AI response and last user command for repeatability.
-- **Safe command execution**: filename validation prevents path traversal and restricts file creation to `.py`, `.txt`, and `.md`.
-- **Modular code**: each responsibility is isolated to one module to keep the codebase understandable and beginner-friendly.
+- The assistant is intentionally not a full IDE or sandboxed execution environment.
+- It favors terminal reliability and clarity over broad voice command coverage.
+- The current implementation uses CPU-safe transcription by default, which is slower but portable.
 
-## Reliability improvements
+## Reliability decisions
 
-- Suppressed noisy library warnings during demo mode.
-- Added clear startup diagnostics and friendly fallback behavior.
-- Improved command handling and error messages.
-- Avoided tracebacks for normal user errors and interruptions.
+- Added clear startup diagnostics for `.env`, API key, microphone, and transcription readiness.
+- Suppressed noisy library warnings so demo output remains clean.
+- Implemented safe filename validation to prevent path traversal during file creation and execution.
+- Added typed fallback and `--text-mode` to handle missing audio hardware.
+- Cleanly handled keyboard interrupts and prevented raw tracebacks from appearing in normal use.
 
 ## Limitations
 
-- The assistant still requires a network connection for LLM responses.
-- It is not a fully sandboxed code execution environment.
-- Transcription quality depends on microphone clarity and acoustic conditions.
+- The assistant still requires network access for Groq LLM responses.
+- Local code execution is limited to simple Python files in the current directory.
+- Voice transcription quality depends on ambient noise and microphone clarity.
 
 ## Future improvements
 
-- Add richer support for natural voice command variations.
-- Add optional local command history or command review.
-- Add an explicit safe mode for file execution output.
+- Add richer natural language command parsing and more aliases.
+- Add command history and clearer intent confirmation.
+- Introduce an optional safe sandbox for local code execution.
+- Improve onboarding prompts for first-time users.
 
-## Demo readiness
+## Demo experience
 
-This project is engineered for a stable live demo with clear terminal output, strong fallback behavior, and a polished command-driven assistant experience.
+The final design is intended for a smooth live demo: a strong startup status screen, a single clean prompt for voice input, safe terminal commands, and formatted AI responses presented in panels. This keeps the assistant feeling professional, reliable, and easy to present.
