@@ -1,88 +1,123 @@
 # Voice Terminal Agent
 
-A terminal-based voice assistant for interacting with an AI coding agent using speech input.
+A terminal-first voice coding assistant for reliable developer workflows.
+
+## Overview
+
+This project offers a polished, terminal-only voice assistant that converts spoken coding requests into text, sends them to a Groq-backed LLM, and displays formatted AI responses directly in the terminal.
+
+## Architecture
+
+User voice → `sounddevice` microphone capture → `faster-whisper` transcription → Groq LLM API → terminal response
 
 ## Features
 
-- Record microphone audio with push-to-talk.
-- Convert speech to text with `faster-whisper`.
--- Send transcribed text to a Groq-backed LLM via an OpenAI-compatible client.
--- Display AI responses in the terminal (formatted with `rich`).
--- Voice and terminal commands: `clear screen`, `create file <name>`, `run python file <name>`, `exit assistant`, `repeat response`, and more.
+- Push-to-talk voice capture with microphone fallback.
+- `faster-whisper` transcription with single-model reuse.
+- OpenAI-compatible Groq LLM integration.
+- Rich terminal UI with status states and panels.
+- Text-only mode (`--text-mode`).
+- Demo mode (`--demo`) for cleaner presentation.
+- Secure terminal commands: `list files`, `show current directory`, `create file <filename>`, `run python file <filename>`.
+- Voice commands: `exit assistant`, `clear screen`, `help`, `repeat response`, `stop listening`.
 
-## Installation
+## Setup
 
-1. Create and activate a Python virtual environment:
+1. Create a virtual environment and activate it:
 
    ```bash
    python3 -m venv .venv
    source .venv/bin/activate
    ```
 
-2. Install the project dependencies:
+2. Install dependencies:
 
    ```bash
    pip install -r requirements.txt
    ```
 
-3. Ensure your API key for Groq/OpenAI-compatible access is configured (see below). Install project dependencies:
+3. Add your Groq API key to a `.env` file in the project root:
 
-```bash
-pip install -r requirements.txt
-```
+   ```text
+   GROQ_API_KEY=your_api_key_here
+   ```
 
-## Microphone requirement
+   Or export it in your shell:
 
-A working microphone is required for voice input. The project uses `sounddevice` to capture audio.
+   ```bash
+   set GROQ_API_KEY="your_api_key_here"
+   ```
 
-If the microphone is unavailable, the application provides a text fallback. Use `--text-mode` to start in text-only mode.
+## Running the assistant
 
-## Running the project
-
-Run the assistant from the project root:
+Normal voice mode:
 
 ```bash
 python main.py
 ```
 
-Start in text-only mode:
+Text-only mode:
 
 ```bash
 python main.py --text-mode
 ```
 
-### API Key Setup (required for AI responses)
-
-API Key Setup (required for AI responses)
-
-This project uses an OpenAI-compatible client to reach Groq's API. Set your API key in the environment (example):
+Demo mode:
 
 ```bash
-export GROQ_API_KEY="your_api_key_here"
+python main.py --demo
 ```
 
-You can also add the key to a `.env` file in the project root:
+Demo mode reduces non-essential output and highlights terminal readability.
 
-```
-GROQ_API_KEY=your_api_key_here
-```
+## Voice commands
 
-If the key is not set the assistant will still run but AI responses will fail.
+Speak one of the following commands directly:
 
-Workflow:
+- `exit assistant`
+- `clear screen`
+- `help`
+- `repeat response`
+- `stop listening`
+- `list files`
+- `show current directory`
+- `create file <filename>`
+- `run python file <filename>`
 
-1. Press ENTER to start recording (push-to-talk).
-2. Speak your instruction.
-3. Press ENTER again to stop recording.
-4. The transcription is sent to the LLM and the formatted response is printed.
+## Terminal commands
+
+Type input directly in text mode or when voice capture is unavailable.
+
+Supported commands:
+
+- `list files`
+- `show current directory`
+- `create file notes.txt`
+- `run python file script.py`
+- `clear screen`
+- `repeat response`
+- `help`
+- `exit assistant`
+
+## Troubleshooting
+
+- If `GROQ_API_KEY` is missing, AI responses will fail, but the assistant can still run for local command handling.
+- If the microphone is unavailable, the assistant will fall back to typed input.
+- The first run may take longer while `faster-whisper` loads its model.
+
+## Limitations
+
+- This project is intentionally terminal-only.
+- It does not include GUI or browser-based interfaces.
+- LLM responses depend on network access and valid API credentials.
+
+## Future improvements
+
+- Add a richer local command palette.
+- Improve voice command parsing with more natural language variations.
+- Add an optional safe code sandbox for local script execution.
 
 ## Demo setup time
 
-- Expected setup time: 10–20 minutes.
-- The first run may be slower while `faster-whisper` downloads its model.
-
-## Notes
-
-- This project is terminal-only.
-- No GUI or text-to-speech is included.
-- Keep the voice commands simple and clear for best results.
+- Estimated setup: 10–20 minutes.
+- First run model load may take longer; subsequent runs are faster.

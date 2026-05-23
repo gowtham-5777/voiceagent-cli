@@ -1,10 +1,19 @@
 from rich.console import Console
+from rich.markdown import Markdown
 from rich.panel import Panel
+from rich.rule import Rule
+from rich.syntax import Syntax
 from rich.text import Text
 import os
 import platform
 
 console = Console()
+DEMO_MODE = False
+
+
+def set_demo_mode(enabled: bool):
+    global DEMO_MODE
+    DEMO_MODE = enabled
 
 
 def clear_screen():
@@ -14,7 +23,10 @@ def clear_screen():
 
 def print_header():
     clear_screen()
-    console.print(Panel(Text("Voice Terminal Agent", justify="center", style="bold cyan"), subtitle="Terminal coding assistant", expand=False))
+    console.rule("[bold cyan]VOICE TERMINAL AGENT[/]", style="cyan")
+    console.print(Text("Terminal-first voice coding assistant", style="bold green"))
+    console.print(Text("Speak commands or use text fallback for reliable demo interactions.\n", style="dim"))
+    console.rule(style="cyan")
 
 
 def _state(prefix: str, message: str, style: str = "green"):
@@ -23,11 +35,11 @@ def _state(prefix: str, message: str, style: str = "green"):
 
 
 def print_listening():
-    _state("🎤", "Listening...", style="bold magenta")
+    _state("🎤", "Press ENTER and speak...", style="bold magenta")
 
 
 def print_transcribing():
-    _state("📝", "Transcribing...", style="yellow")
+    _state("📝", "Processing your request...", style="yellow")
 
 
 def print_thinking():
@@ -42,6 +54,11 @@ def print_info(message: str):
     console.print(Text(message, style="green"))
 
 
+def print_debug(message: str):
+    if not DEMO_MODE:
+        console.print(Text(message, style="dim"))
+
+
 def print_warning(message: str):
     console.print(Text(message, style="yellow"))
 
@@ -50,7 +67,34 @@ def print_error(message: str):
     console.print(Text(message, style="bold red"))
 
 
+def print_section(title: str, subtitle: str = ""):
+    console.rule(f"[bold cyan]{title}[/] {subtitle}", style="cyan")
+
+
 def print_response(response: str, title: str = "AI RESPONSE"):
-    panel = Panel(response, title=title, expand=True, style="white on #0b1220")
+    if not response:
+        response = "(no response received)"
+
+    if "```" in response or response.strip().startswith("def "):
+        syntax = Syntax(response, "python", theme="monokai", line_numbers=False)
+        panel = Panel(syntax, title=title, expand=True, style="white on #0b1220")
+    elif "# " in response or "- " in response:
+        markdown = Markdown(response)
+        panel = Panel(markdown, title=title, expand=True, style="white on #0b1220")
+    else:
+        panel = Panel(Text(response), title=title, expand=True, style="white on #0b1220")
+
+    console.print(panel)
+
+
+def print_status_list(items: dict):
+    lines = []
+    for label, status in items.items():
+        lines.append(f"[bold]{label}[/]: {status}")
+    console.print(Panel(Text("\n".join(lines)), title="Startup Status", expand=True, style="cyan"))
+
+
+def print_file_result(title: str, content: str):
+    panel = Panel(Text(content or "(empty)"), title=title, expand=True, style="green")
     console.print(panel)
 

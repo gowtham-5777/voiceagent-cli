@@ -3,7 +3,7 @@ import re
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from utils.helpers import print_error, print_info
+from utils.helpers import print_debug, print_error, print_info
 
 
 # Load .env
@@ -41,7 +41,7 @@ def send_to_llm(prompt: str) -> str:
     if not prompt or not prompt.strip():
         return "No text was provided."
 
-    print_info("Sending transcription to Groq LLM...")
+    print_debug("Sending transcription to Groq LLM...")
 
     client, err = _get_client()
     if err:

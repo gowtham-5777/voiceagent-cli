@@ -48,6 +48,17 @@ def _find_input_device(samplerate: int, channels: int):
     ) from last_error
 
 
+def is_microphone_available(samplerate: int = 16000, channels: int = 1) -> bool:
+    """Return whether a valid microphone input device is available."""
+    if sd is None:
+        raise RuntimeError(
+            "The 'sounddevice' package is not installed. "
+            "Install it with 'pip install sounddevice' or 'pip install -r requirements.txt'."
+        )
+    _find_input_device(samplerate=samplerate, channels=channels)
+    return True
+
+
 def record_audio(samplerate: int = 16000, channels: int = 1):
     """Record audio from the microphone until the user presses ENTER again."""
     frames = []
@@ -72,9 +83,9 @@ def record_audio(samplerate: int = 16000, channels: int = 1):
 
     device_index = _find_input_device(samplerate=samplerate, channels=channels)
 
-    print_info("Press ENTER to start recording...")
+    print_info("Press ENTER to begin speaking. Press ENTER again when finished.")
     input()
-    print_info("Recording... Press ENTER again to stop.")
+    print_info("Recording... speak now.")
 
     listener = threading.Thread(target=stop_listener, daemon=True)
     listener.start()

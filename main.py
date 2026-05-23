@@ -1,19 +1,28 @@
 import argparse
+import logging
 import os
 import subprocess
 import sys
+import warnings
+from pathlib import Path
 
 from dotenv import load_dotenv
 
 from agent.llm_client import send_to_llm
-from speech import recorder, transcriber
 from commands import parser as cmd_parser
+from speech import recorder, transcriber
 from utils import helpers, session
 
+# Suppress noisy third-party warnings for clean demo output.
+os.environ.setdefault("TRANSFORMERS_VERBOSITY", "error")
+os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
+logging.getLogger("transformers").setLevel(logging.ERROR)
+logging.getLogger("ctranslate2").setLevel(logging.ERROR)
+logging.getLogger("faster_whisper").setLevel(logging.ERROR)
+warnings.filterwarnings("ignore", category=UserWarning)
 
-# Load env
+# Load environment variables
 load_dotenv()
-
 
 ALLOWED_EXT = {".py", ".txt", ".md"}
 
@@ -60,10 +69,51 @@ def _run_python_file(base_dir: str, filename: str) -> str:
         return f"Error running file: {exc}"
 
 
-def run_assistant(text_mode: bool = False):
+def _startup_status(text_mode: bool) -> dict:
+    status = {
+        ".env file": "found" if Path(".env").exists() else "missing",
+        "Groq API key": "loaded" if os.getenv("GROQ_API_KEY") else "missing",
+    }
+
+    if text_mode:
+        status["Microphone"] = "skipped (text-only mode)"
+        status["Whisper model"] = "skipped (text-only mode)"
+    else:
+        try:
+            recorder.is_microphone_available()
+            status["Microphone"] = "detected"
+        except Exception as exc:
+            status["Microphone"] = f"unavailable ({exc})"
+
+        try:
+            transcriber.load_model()
+            status["Whisper model"] = "ready"
+        except Exception as exc:
+            status["Whisper model"] = f"unavailable ({exc})"
+
+    return status
+
+
+def _display_startup_status(status: dict):
+    helpers.print_section("STARTUP STATUS")
+    helpers.print_status_list(status)
+    helpers.print_info("Ready for voice or typed commands. Use --demo for cleaner display.")
+
+
+def run_assistant(text_mode: bool = False, demo_mode: bool = False):
     base_dir = os.getcwd()
+    helpers.set_demo_mode(demo_mode)
     helpers.print_header()
-    helpers.print_info("Starting Voice Terminal Agent. Press Ctrl+C to exit.")
+    status = _startup_status(text_mode)
+    _display_startup_status(status)
+
+    if not text_mode and status.get("Microphone", "") != "detected":
+        helpers.print_warning("Voice input is unavailable. Falling back to text-only mode.")
+        text_mode = True
+
+    if not text_mode and status.get("Whisper model", "") != "ready":
+        helpers.print_warning("Whisper model is unavailable. Falling back to text-only mode.")
+        text_mode = True
 
     try:
         while True:
@@ -78,14 +128,16 @@ def run_assistant(text_mode: bool = False):
                     audio, sr = recorder.record_audio()
                     helpers.print_transcribing()
                     transcription = transcriber.transcribe_audio(audio, sr)
+                except KeyboardInterrupt:
+                    raise
                 except Exception as exc:
-                    helpers.print_warning(f"Microphone unavailable or recording failed: {exc}")
-                    user_input = input("Microphone unavailable. Type your command: ")
-                    transcription = user_input.strip()
+                    helpers.print_warning(f"Voice capture failed: {exc}")
+                    transcription = input("Type your command instead: ").strip()
 
             if not transcription:
                 continue
 
+            session.store_last_command(transcription)
             cmd = cmd_parser.parse_command(transcription)
             if cmd:
                 action, arg = cmd
@@ -94,23 +146,35 @@ def run_assistant(text_mode: bool = False):
                     break
                 if action == "clear":
                     helpers.clear_screen()
+                    helpers.print_header()
                     continue
                 if action == "help":
-                    helpers.print_info("Commands: exit assistant, clear screen, help, repeat response, list files, show current directory, create file <name>, run python file <name>")
+                    helpers.print_response(
+                        "Available commands:\n"
+                        "- exit assistant\n"
+                        "- clear screen\n"
+                        "- help\n"
+                        "- repeat response\n"
+                        "- list files\n"
+                        "- show current directory\n"
+                        "- create file <filename>\n"
+                        "- run python file <filename>",
+                        title="COMMANDS"
+                    )
                     continue
                 if action == "repeat":
                     last = session.get_last_response()
                     if last:
-                        helpers.print_response(last)
+                        helpers.print_response(last, title="LAST RESPONSE")
                     else:
-                        helpers.print_info("No previous response to repeat.")
+                        helpers.print_info("No previous AI response available.")
                     continue
                 if action == "list_files":
                     files = os.listdir(base_dir)
-                    helpers.print_response("\n".join(files), title="FILES")
+                    helpers.print_file_result("FILES", "\n".join(files))
                     continue
                 if action == "pwd":
-                    helpers.print_response(base_dir, title="CWD")
+                    helpers.print_file_result("CURRENT DIRECTORY", base_dir)
                     continue
                 if action == "create_file":
                     result = _create_file(base_dir, arg)
@@ -118,10 +182,9 @@ def run_assistant(text_mode: bool = False):
                     continue
                 if action == "run_python":
                     out = _run_python_file(base_dir, arg)
-                    helpers.print_response(out or "", title=f"Run: {arg}")
+                    helpers.print_response(out or "", title=f"RUN {arg}")
                     continue
 
-            # If not a command, send to LLM
             helpers.print_thinking()
             response = send_to_llm(transcription)
             helpers.print_ready()
@@ -135,9 +198,10 @@ def run_assistant(text_mode: bool = False):
 def main():
     parser = argparse.ArgumentParser(description="Voice Terminal Assistant")
     parser.add_argument("--text-mode", action="store_true", help="Start in text-only mode (typed input)")
+    parser.add_argument("--demo", action="store_true", help="Enable demo mode with cleaner terminal output")
     args = parser.parse_args()
 
-    run_assistant(text_mode=args.text_mode)
+    run_assistant(text_mode=args.text_mode, demo_mode=args.demo)
 
 
 if __name__ == "__main__":

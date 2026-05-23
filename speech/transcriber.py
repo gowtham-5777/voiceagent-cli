@@ -3,7 +3,7 @@ try:
 except ImportError:
     WhisperModel = None
 
-from utils.helpers import print_error, print_info
+from utils.helpers import print_debug, print_error
 
 
 model = None
@@ -18,7 +18,7 @@ def load_model(model_size: str = "tiny.en", device: str = "cpu"):
             "Install it with 'pip install faster-whisper' or 'pip install -r requirements.txt'."
         )
     if model is None:
-        print_info("Loading faster-whisper model. This may take a moment on first run.")
+        print_debug("Loading faster-whisper model. This may take a moment on first run.")
         model = WhisperModel(model_size, device=device)
     return model
 
