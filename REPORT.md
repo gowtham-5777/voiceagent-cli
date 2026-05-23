@@ -92,6 +92,15 @@ The final system behaves as a lightweight terminal coding assistant optimized fo
 - Introduce an optional safe sandbox for local code execution.
 - Improve onboarding prompts for first-time users.
 
+## API cost analysis
+
+Groq API cost considerations:
+
+- Groq provides low-latency inference suitable for live demos; check Groq's current pricing for exact rates.
+- Cost formula: `cost_per_request = (avg_tokens / 1000) * cost_per_1k_tokens`.
+	- Example (adjust to current pricing): with `avg_tokens = 500` and `cost_per_1k_tokens = $0.02`, `cost_per_request = (500/1000)*0.02 = $0.01`; 100 demo requests ≈ $1.
+- Mitigations: limit `max_tokens`, keep the system prompt concise, prefer short responses in demo mode, cache frequent replies, and rate-limit/demo quotas to control spend.
+
 ## Demo experience
 
 The final design is intended for a smooth live demo: a strong startup status screen, a single clean prompt for voice input, safe terminal commands, and formatted AI responses presented in panels. This keeps the assistant feeling professional, reliable, and easy to present.

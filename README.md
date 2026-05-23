@@ -30,6 +30,18 @@ Rich terminal rendering
 - Demo mode for polished output.
 - Safe command execution for file creation and script runs.
 
+## Dependencies
+
+Key dependencies (see `requirements.txt` for full versions):
+
+- Python 3.10+
+- sounddevice
+- faster-whisper
+- numpy
+- rich
+- python-dotenv
+- openai (or Groq-compatible client)
+
 ## Getting started
 
 1. Create a virtual environment and activate it:
@@ -123,6 +135,9 @@ VOICE TERMINAL AGENT
 
 Ready for voice interaction.
 ```
+
+Estimated demo setup time: 3–5 minutes
+
 
 ## Troubleshooting
 
