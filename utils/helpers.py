@@ -1,43 +1,56 @@
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
 import os
 import platform
 
-RESET = "\033[0m"
-BOLD = "\033[1m"
-BLUE = "\033[94m"
-GREEN = "\033[92m"
-YELLOW = "\033[93m"
-RED = "\033[91m"
+console = Console()
 
 
 def clear_screen():
-    """Clear the terminal screen."""
     command = "cls" if platform.system() == "Windows" else "clear"
     os.system(command)
 
 
-def format_text(text: str, color: str = "", bold: bool = False) -> str:
-    style = ""
-    if bold:
-        style += BOLD
-    if color:
-        style += color
-    return f"{style}{text}{RESET}"
-
-
 def print_header():
-    """Print the app header with a simple color theme."""
     clear_screen()
-    print(format_text("Voice Terminal Agent", BLUE, bold=True))
-    print(format_text("A simple voice input interface for terminal coding workflows.\n", GREEN))
+    console.print(Panel(Text("Voice Terminal Agent", justify="center", style="bold cyan"), subtitle="Terminal coding assistant", expand=False))
+
+
+def _state(prefix: str, message: str, style: str = "green"):
+    console.print(f"{prefix} ", end="")
+    console.print(Text(message, style=style))
+
+
+def print_listening():
+    _state("🎤", "Listening...", style="bold magenta")
+
+
+def print_transcribing():
+    _state("📝", "Transcribing...", style="yellow")
+
+
+def print_thinking():
+    _state("🤖", "Thinking...", style="bright_blue")
+
+
+def print_ready():
+    _state("✅", "Response Ready", style="green")
 
 
 def print_info(message: str):
-    print(format_text(message, GREEN))
+    console.print(Text(message, style="green"))
 
 
 def print_warning(message: str):
-    print(format_text(message, YELLOW))
+    console.print(Text(message, style="yellow"))
 
 
 def print_error(message: str):
-    print(format_text(message, RED, bold=True))
+    console.print(Text(message, style="bold red"))
+
+
+def print_response(response: str, title: str = "AI RESPONSE"):
+    panel = Panel(response, title=title, expand=True, style="white on #0b1220")
+    console.print(panel)
+

@@ -6,9 +6,9 @@ A terminal-based voice assistant for interacting with an AI coding agent using s
 
 - Record microphone audio with push-to-talk.
 - Convert speech to text with `faster-whisper`.
-- Send transcribed text to Open Interpreter.
-- Display AI responses in the terminal.
-- Basic voice commands: `clear screen`, `run code`, `exit assistant`.
+-- Send transcribed text to a Groq-backed LLM via an OpenAI-compatible client.
+-- Display AI responses in the terminal (formatted with `rich`).
+-- Voice and terminal commands: `clear screen`, `create file <name>`, `run python file <name>`, `exit assistant`, `repeat response`, and more.
 
 ## Installation
 
@@ -25,19 +25,17 @@ A terminal-based voice assistant for interacting with an AI coding agent using s
    pip install -r requirements.txt
    ```
 
-3. Install Open Interpreter separately if the CLI is not already available:
+3. Ensure your API key for Groq/OpenAI-compatible access is configured (see below). Install project dependencies:
 
-   ```bash
-   pip install open-interpreter
-   ```
-
-   If the command is not found, the app can also use the installed `interpreter` CLI entrypoint.
+```bash
+pip install -r requirements.txt
+```
 
 ## Microphone requirement
 
 A working microphone is required for voice input. The project uses `sounddevice` to capture audio.
 
-If the microphone is unavailable, the application provides a text fallback.
+If the microphone is unavailable, the application provides a text fallback. Use `--text-mode` to start in text-only mode.
 
 ## Running the project
 
@@ -47,28 +45,36 @@ Run the assistant from the project root:
 python main.py
 ```
 
-### API Key Setup (required for AI responses)
-
-Before using Open Interpreter, set your API provider's credentials:
-
-**OpenAI (recommended):**
+Start in text-only mode:
 
 ```bash
-export OPENAI_API_KEY="sk-..."
-python main.py
+python main.py --text-mode
 ```
 
-Or use other supported providers by setting the appropriate environment variables (e.g., `ANTHROPIC_API_KEY` for Claude).
+### API Key Setup (required for AI responses)
 
-**Note:** Open Interpreter defaults to OpenAI's GPT models. If you don't have credentials, the app will fail when attempting to send requests to the AI.
+API Key Setup (required for AI responses)
+
+This project uses an OpenAI-compatible client to reach Groq's API. Set your API key in the environment (example):
+
+```bash
+export GROQ_API_KEY="your_api_key_here"
+```
+
+You can also add the key to a `.env` file in the project root:
+
+```
+GROQ_API_KEY=your_api_key_here
+```
+
+If the key is not set the assistant will still run but AI responses will fail.
 
 Workflow:
 
-1. Press ENTER to start recording (or speak).
+1. Press ENTER to start recording (push-to-talk).
 2. Speak your instruction.
 3. Press ENTER again to stop recording.
-4. The transcription is sent to Open Interpreter via Python API.
-5. Read the AI response in the terminal.
+4. The transcription is sent to the LLM and the formatted response is printed.
 
 ## Demo setup time
 

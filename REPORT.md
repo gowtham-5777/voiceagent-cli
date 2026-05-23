@@ -3,9 +3,9 @@
 ## 1. Technology choices
 
 - **Python**: simple, widely available, and the required language for the assignment.
-- **faster-whisper**: provides local speech-to-text transcription without a browser-based UI.
-- **sounddevice**: captures microphone audio directly with a small dependency set.
-- **Open Interpreter**: acts as the terminal-based AI coding agent backend.
+-- **faster-whisper**: provides local speech-to-text transcription without a browser-based UI.
+-- **sounddevice**: captures microphone audio directly with a small dependency set.
+-- **Groq (via OpenAI-compatible client)**: used as the LLM backend for concise, code-focused responses.
 
 ## 3. Architecture
 
@@ -18,9 +18,9 @@ The project is organized into clear modules:
 - `commands/parser.py`: voice command detection.
 - `utils/helpers.py`: terminal display helpers.
 
-### Open Interpreter Integration
+### LLM Integration
 
-The wrapper uses Open Interpreter's Python API (`interpreter.chat()`) to send transcribed text and receive AI responses. This avoids subprocess CLI limitations and provides direct access to the interpreter object's methods and configuration.
+The assistant sends prompts to a Groq-hosted LLM via an OpenAI-compatible Python client (`openai.OpenAI`). This keeps the integration simple and terminal-only while enabling the use of Groq models (configured via `GROQ_API_KEY`).
 
 ## 3. Tradeoffs
 
@@ -31,7 +31,7 @@ The wrapper uses Open Interpreter's Python API (`interpreter.chat()`) to send tr
 
 ## 4. Limitations
 
-- The Open Interpreter integration depends on the CLI being installed and available in PATH.
+-- The assistant requires network access and a valid `GROQ_API_KEY` for AI responses.
 - Speech-to-text quality depends on the chosen Whisper model and microphone quality.
 - The code execution command is a placeholder and does not execute arbitrary scripts automatically.
 
