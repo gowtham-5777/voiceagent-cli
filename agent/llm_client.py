@@ -12,7 +12,7 @@ load_dotenv()
 
 GROQ_API_KEY_ENV = os.getenv("GROQ_API_KEY")
 API_BASE = os.getenv("OPENAI_API_BASE", "https://api.groq.com/openai/v1")
-MODEL_NAME = os.getenv("GROQ_MODEL", "groq/llama-3.3-70b-versatile")
+MODEL_NAME = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
 
 def _sanitize_terminal_output(text: str) -> str:
